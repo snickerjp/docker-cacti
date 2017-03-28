@@ -1,7 +1,8 @@
 version: '2'
 services:
-  cacti-master:
-    image: "smcline06/cacti:1.1.1"
+  cacti:
+#    image: "smcline06/cacti:1.1.0
+    build: .
     ports:
       - "80:80"
       - "443:443"
@@ -17,30 +18,7 @@ services:
     links:
       - db
 
-  cacti-poller:
-    image: "smcline06/cacti:1.1.1"
-    ports:
-      - "8080:80"
-      - "8443:443"
-    environment:
-      - DB_NAME=cacti_poller
-      - DB_USER=cactipolleruser
-      - DB_PASS=cactipollerpassword
-      - DB_HOST=db
-      - DB_PORT=3306
-      - RDB_NAME=cacti_master
-      - RDB_USER=cactiuser
-      - RDB_PASS=cactipassword
-      - RDB_HOST=db
-      - RDB_PORT=3306
-      - DB_ROOT_PASS=rootpassword
-      - REMOTE_POLLER=1
-      - INITIALIZE_DB=1
-      - TZ=America/Los_Angeles
-    links:
-      - db
-
-  db-master:
+  db:
     image: "percona:5.7.14"
     ports:
       - "3306:3306"
