@@ -120,7 +120,14 @@
 #### 1.1.0 - 03/25/2017
  * Initial push
 
- [CL1.2.0]: http://www.cacti.net/release_notes.php?version=1.2.0
+[CL1.2.6]: http://www.cacti.net/release_notes.php?version=1.2.6
+[CL1.2.5]: http://www.cacti.net/release_notes.php?version=1.2.5
+[CL1.2.4]: http://www.cacti.net/release_notes.php?version=1.2.4
+[CL1.2.3]: http://www.cacti.net/release_notes.php?version=1.2.3
+[CL1.2.2]: http://www.cacti.net/release_notes.php?version=1.2.2
+[CL1.2.1]: http://www.cacti.net/release_notes.php?version=1.2.1
+[CL1.2.0]: http://www.cacti.net/release_notes.php?version=1.2.0
+[CL1.2.0]: http://www.cacti.net/release_notes.php?version=1.2.0
 [CL1.1.38]: http://www.cacti.net/release_notes.php?version=1.1.38
 [CL1.1.37]: http://www.cacti.net/release_notes.php?version=1.1.37
 [CL1.1.36]: http://www.cacti.net/release_notes.php?version=1.1.36
