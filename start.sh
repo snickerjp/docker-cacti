@@ -22,7 +22,7 @@ if [ ${PHP_SNMP} = 0 ]; then
     yum clean all
 fi
 
-# verify if initial install steps are required, if lock file does not exist run the following   
+# verify if initial install steps are required, if lock file does not exist run the following
 if [ ! -f /cacti/install.lock ]; then
     echo "$(date +%F_%R) [New Install] Lock file does not exist - new install."
 
@@ -100,7 +100,7 @@ if [ ! -f /cacti/install.lock ]; then
     # if this is a remote poller dont do anything with scripts/templates or plugins. This is sourced from the master instance
     if [ ${REMOTE_POLLER} != 1 ]; then
         echo "$(date +%F_%R) [New Install] Installing supporting template files."
-        cp -r /templates/resource/* /cacti/resource 
+        cp -r /templates/resource/* /cacti/resource
         cp -r /templates/scripts/* /cacti/scripts
 
         echo "$(date +%F_%R) [New Install] Installing plugins."
@@ -132,7 +132,7 @@ fi
 echo "$(date +%F_%R) [Apache] Validating httpd cacti configuration is present."
 if [ -f "/etc/httpd/conf.d/cacti.conf" ]; then
     echo "$(date +%F_%R) [Apache] /etc/httpd/conf.d/cacti.conf exist, nothing to do."
-else 
+else
     echo "$(date +%F_%R) [Apache] /etc/httpd/conf.d/cacti.conf does not exist, copying a new one over."
     cp /template_configs/cacti.conf /etc/httpd/conf.d/
     # update cacti url path config, requested via https://github.com/scline/docker-cacti/issues/73
@@ -144,7 +144,7 @@ fi
 
 # only generate certs if none exsist, this way users can provide there own
 if [ ! -f /etc/ssl/certs/cacti.key  ] || [ ! -f /etc/ssl/certs/cacti.crt  ]; then
-    # generate self-signed certs for basic https functionality. 
+    # generate self-signed certs for basic https functionality.
     echo "$(date +%F_%R) [Apache] Missing HTTPS certs, generating self-signed one's."
     openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 \
         -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=www.example.com" \
