@@ -70,7 +70,6 @@ RUN \
     bison openssl openldap mod_ssl net-snmp-libs automake \
     gcc gzip libtool make net-snmp-devel dos2unix m4 which \
     openssl-devel mariadb-devel sendmail wget help2man perl-libwww-perl && \
-    yum install -y --allowerasing curl && \
     yum clean all && \
     rm -rf /var/cache/yum/* && \
     sed -i '/session    required   pam_loginuid.so/c\#session    required   pam_loginuid.so' /etc/pam.d/crond && \
