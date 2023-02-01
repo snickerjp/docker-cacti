@@ -70,7 +70,7 @@ RUN \
     bison openssl openldap mod_ssl net-snmp-libs automake \
     gcc gzip libtool make net-snmp-devel dos2unix m4 which \
     openssl-devel mariadb-devel postfix curl-minimal wget help2man perl-libwww-perl \
-    procps-ng iputils compat-openssl11 && \
+    procps-ng iputils && \
     yum clean all && \
     rm -rf /var/cache/yum/* && \
     chmod 0644 /etc/crontab && \
