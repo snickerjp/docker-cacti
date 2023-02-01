@@ -76,6 +76,5 @@ RUN \
     chmod 0644 /etc/crontab && \
     chmod u+s /bin/ping && \
     chmod g+s /bin/ping && \
-    ln -sf /usr/lib64/libnetsnmp.so.40 /usr/lib64/libnetsnmp.so.35 && \
     echo "ServerName localhost" > /etc/httpd/conf.d/fqdn.conf && \
     /usr/libexec/httpd-ssl-gencerts
