@@ -183,7 +183,7 @@ fi
 
 # start cron service
 echo "$(date +%F_%R) [Note] Starting crond service."
-/usr/sbin/crond -npP &
+/usr/sbin/crond -n &
 
 # start snmp servics
 echo "$(date +%F_%R) [Note] Starting snmpd service."
