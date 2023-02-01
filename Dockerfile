@@ -53,8 +53,6 @@ RUN \
     chmod +x /upgrade.sh && \
     chmod +x /restore.sh && \
     chmod +x /backup.sh && \
-    chmod u+s /bin/ping && \
-    chmod g+s /bin/ping && \
     mkdir /backups && \
     mkdir /cacti && \
     mkdir /spine && \
@@ -71,9 +69,12 @@ RUN \
     rrdtool net-snmp net-snmp-utils cronie mariadb autoconf \
     bison openssl openldap mod_ssl net-snmp-libs automake \
     gcc gzip libtool make net-snmp-devel dos2unix m4 which \
-    openssl-devel mariadb-devel postfix curl wget help2man perl-libwww-perl procps-ng && \
+    openssl-devel mariadb-devel postfix curl-minimal wget help2man perl-libwww-perl \
+    procps-ng iputils && \
     yum clean all && \
     rm -rf /var/cache/yum/* && \
     chmod 0644 /etc/crontab && \
+    chmod u+s /bin/ping && \
+    chmod g+s /bin/ping && \
     echo "ServerName localhost" > /etc/httpd/conf.d/fqdn.conf && \
     /usr/libexec/httpd-ssl-gencerts
