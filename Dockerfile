@@ -1,4 +1,4 @@
-FROM rockylinux:9.0
+FROM rockylinux:9
 
 LABEL org.opencontainers.image.authors="Sean Cline <smcline06@gmail.com>"
 
