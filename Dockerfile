@@ -1,6 +1,6 @@
-FROM rockylinux:8
+FROM rockylinux:9.0
 
-MAINTAINER Sean Cline <smcline06@gmail.com>
+LABEL org.opencontainers.image.authors="Sean Cline <smcline06@gmail.com>"
 
 EXPOSE 80 443
 
@@ -59,10 +59,9 @@ RUN \
     mkdir /cacti && \
     mkdir /spine && \
     yum update -y && \
-    yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm && \
+    yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm && \
     yum install -y dnf-plugins-core && \
-    yum config-manager --set-enabled powertools && \
-    yum -y --enablerepo=powertools install elinks && \
+    yum config-manager --set-enabled crb && \
     yum install -y \
     php php-xml php-session php-sockets php-ldap php-gd \
     php-json php-mysqlnd php-gmp php-mbstring php-posix \
@@ -72,7 +71,7 @@ RUN \
     rrdtool net-snmp net-snmp-utils cronie mariadb autoconf \
     bison openssl openldap mod_ssl net-snmp-libs automake \
     gcc gzip libtool make net-snmp-devel dos2unix m4 which \
-    openssl-devel mariadb-devel sendmail curl wget help2man perl-libwww-perl procps-ng && \
+    openssl-devel mariadb-devel sendmail curl wget help2man perl-libwww-perl && \
     yum clean all && \
     rm -rf /var/cache/yum/* && \
     chmod 0644 /etc/crontab && \
