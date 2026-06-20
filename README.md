@@ -46,6 +46,23 @@ By default https will work if exposed, though using a self signed certificate. T
 
 ## Installation
 
+### Rocky Linux 9 / MySQL 9.x Support
+
+A separate `Dockerfile.rl9` is provided for Rocky Linux 9 with a multi-stage build that produces a smaller image (~490MB vs ~900MB).
+
+**Build with a specific Cacti version:**
+```
+docker build -f Dockerfile.rl9 --build-arg CACTI_VERSION=1.2.31 -t cacti:1.2.31-rl9 .
+```
+
+Features of the rl9 build:
+- Multi-stage: Spine compiled at build time (no build tools in final image)
+- Cacti/Spine downloaded from cacti.net by version ARG (no tarballs in repo needed)
+- MySQL 9.x, 8.x, and MariaDB 10.11+ compatible
+- `postfix` instead of `sendmail`, `mariadb` CLI for mysql client
+
+The original `Dockerfile` (Rocky Linux 8) remains available for backward compatibility.
+
 ### Cacti Master
 The main cacti poller settings, these are required for single cacti and multi cacti host installations.
 
