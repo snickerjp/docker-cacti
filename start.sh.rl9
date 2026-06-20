@@ -2,7 +2,7 @@
 
 # set server timezone
 echo "$(date +%F_%R) [Note] Setting server timezone settings to '${TZ}'"
-sed -i "s/^\(date\.timezone =\).*/\1 ${TZ}/" /etc/php.ini
+sed -i "s|^\(date\.timezone =\).*|\1 ${TZ}|" /etc/php.ini
 grep -q "^date\.timezone" /etc/php.ini || echo "date.timezone = ${TZ}" >>/etc/php.ini
 
 # set custom php.ini settings
