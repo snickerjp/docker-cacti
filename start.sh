@@ -81,20 +81,20 @@ if [ ! -f /cacti/install.lock ]; then
         echo "$(date +%F_%R) [New Install] Container has been instructed to create new Database on remote system."
         # initial database and user setup
         echo "$(date +%F_%R) [New Install] CREATE DATABASE ${DB_NAME} /*\!40100 DEFAULT CHARACTER SET utf8 */;"
-        mysql -h ${DB_HOST} --port=${DB_PORT} -uroot -p${DB_ROOT_PASS} -e "CREATE DATABASE IF NOT EXISTS ${DB_NAME} /*\!40100 DEFAULT CHARACTER SET utf8 */;"
+        mysql -h "${DB_HOST}" --port="${DB_PORT}" -uroot -p"${DB_ROOT_PASS}" -e "CREATE DATABASE IF NOT EXISTS ${DB_NAME} /*\!40100 DEFAULT CHARACTER SET utf8 */;"
         # create cacti user
         echo "$(date +%F_%R) [New Install] CREATE USER '${DB_USER}'@'%' IDENTIFIED BY '*******';"
-        mysql -h ${DB_HOST} --port=${DB_PORT} -uroot -p${DB_ROOT_PASS} -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}';"
+        mysql -h "${DB_HOST}" --port="${DB_PORT}" -uroot -p"${DB_ROOT_PASS}" -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}';"
         # allow cacti user access to new database
         echo "$(date +%F_%R) [New Install] GRANT ALL ON ${DB_NAME}.* TO '${DB_USER}'@'%';"
-        mysql -h ${DB_HOST} --port=${DB_PORT} -uroot -p${DB_ROOT_PASS} -e "GRANT ALL ON ${DB_NAME}.* TO '${DB_USER}'@'%';"
+        mysql -h "${DB_HOST}" --port="${DB_PORT}" -uroot -p"${DB_ROOT_PASS}" -e "GRANT ALL ON ${DB_NAME}.* TO '${DB_USER}'@'%';"
         # allow required access to mysql timezone table
         echo "$(date +%F_%R) [New Install] GRANT SELECT ON mysql.time_zone_name TO '${DB_USER}'@'%';"
-        mysql -h ${DB_HOST} --port=${DB_PORT} -uroot -p${DB_ROOT_PASS} -e "GRANT SELECT ON mysql.time_zone_name TO '${DB_USER}'@'%';"
+        mysql -h "${DB_HOST}" --port="${DB_PORT}" -uroot -p"${DB_ROOT_PASS}" -e "GRANT SELECT ON mysql.time_zone_name TO '${DB_USER}'@'%';"
         # grant session/system variables admin (replaces deprecated SUPER privilege)
-        mysql -h ${DB_HOST} --port=${DB_PORT} -uroot -p${DB_ROOT_PASS} -e "GRANT SESSION_VARIABLES_ADMIN, SYSTEM_VARIABLES_ADMIN ON *.* TO '${DB_USER}'@'%';" 2>/dev/null
+        mysql -h "${DB_HOST}" --port="${DB_PORT}" -uroot -p"${DB_ROOT_PASS}" -e "GRANT SESSION_VARIABLES_ADMIN, SYSTEM_VARIABLES_ADMIN ON *.* TO '${DB_USER}'@'%';" 2>/dev/null
         # flush privileges
-        mysql -h ${DB_HOST} --port=${DB_PORT} -uroot -p${DB_ROOT_PASS} -e "FLUSH PRIVILEGES;"
+        mysql -h "${DB_HOST}" --port="${DB_PORT}" -uroot -p"${DB_ROOT_PASS}" -e "FLUSH PRIVILEGES;"
     fi
 
     # fresh install db merge
@@ -102,9 +102,9 @@ if [ ! -f /cacti/install.lock ]; then
     # Remove NO_AUTO_CREATE_USER from sql_mode (removed in MySQL 8.0.11+)
     sed -i "s/,NO_AUTO_CREATE_USER//g; s/NO_AUTO_CREATE_USER,\?//g" /cacti/cacti.sql
     if [ -n "${DB_ROOT_PASS}" ]; then
-        mysql -h ${DB_HOST} --port=${DB_PORT} -uroot -p${DB_ROOT_PASS} ${DB_NAME} < /cacti/cacti.sql
+        mysql -h "${DB_HOST}" --port="${DB_PORT}" -uroot -p"${DB_ROOT_PASS}" ${DB_NAME} < /cacti/cacti.sql
     else
-        mysql -h ${DB_HOST} --port=${DB_PORT} -u${DB_USER} -p${DB_PASS} ${DB_NAME} < /cacti/cacti.sql
+        mysql -h "${DB_HOST}" --port="${DB_PORT}" -u"${DB_USER}" -p"${DB_PASS}" "${DB_NAME}" < /cacti/cacti.sql
     fi
 
     # if this is a remote poller dont do anything with scripts/templates or plugins. This is sourced from the master instance
@@ -127,9 +127,9 @@ if [ ! -f /cacti/install.lock ]; then
     for filename in /settings/*.sql; do
         echo "$(date +%F_%R) [New Install] Importing settings file $filename"
         if [ -n "${DB_ROOT_PASS}" ]; then
-            mysql -h ${DB_HOST} --port=${DB_PORT} -uroot -p${DB_ROOT_PASS} ${DB_NAME} < $filename
+            mysql -h "${DB_HOST}" --port="${DB_PORT}" -uroot -p"${DB_ROOT_PASS}" ${DB_NAME} < "$filename"
         else
-            mysql -h ${DB_HOST} --port=${DB_PORT} -u${DB_USER} -p${DB_PASS} ${DB_NAME} < $filename
+            mysql -h "${DB_HOST}" --port="${DB_PORT}" -u"${DB_USER}" -p"${DB_PASS}" "${DB_NAME}" < "$filename"
         fi
     done
 
