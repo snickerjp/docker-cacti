@@ -24,20 +24,16 @@ if [ ! -f /cacti/install.lock ]; then
 
     # apply database credentials to config files
     echo "$(date +%F_%R) [New Install] Applying environmental variables to configurations."
-    sed -i -e "s/%DB_HOST%/${DB_HOST}/" \
-        -e "s/%DB_PORT%/${DB_PORT}/" \
-        -e "s/%DB_NAME%/${DB_NAME}/" \
-        -e "s/%DB_USER%/${DB_USER}/" \
-        -e "s/%DB_PASS%/${DB_PASS}/" \
-        -e "s/%RDB_HOST%/${RDB_HOST}/" \
-        -e "s/%RDB_PORT%/${RDB_PORT}/" \
-        -e "s/%RDB_NAME%/${RDB_NAME}/" \
-        -e "s/%RDB_USER%/${RDB_USER}/" \
-        -e "s/%RDB_PASS%/${RDB_PASS}/" \
-        -e "s/%CACTI_URL_PATH%/${CACTI_URL_PATH}/" \
-        /cacti/include/config.php \
-        /settings/*.sql \
-        /spine/etc/spine.conf
+    sed 's/%\([A-Z_]*\)%/${\1}/g' /template_configs/config.php | \
+        envsubst '${DB_HOST} ${DB_PORT} ${DB_NAME} ${DB_USER} ${DB_PASS} ${RDB_HOST} ${RDB_PORT} ${RDB_NAME} ${RDB_USER} ${RDB_PASS} ${CACTI_URL_PATH}' \
+        > /cacti/include/config.php
+    chown root:apache /cacti/include/config.php
+    chmod 640 /cacti/include/config.php
+    for f in /settings/*.sql; do
+        sed "s/%\([A-Z_]*\)%/\${\\1}/g" "$f" | \
+            envsubst '${DB_NAME} ${DB_HOST} ${DB_PORT} ${DB_USER} ${DB_PASS} ${CACTI_URL_PATH}' > "${f}.tmp.$$"
+        mv "${f}.tmp.$$" "$f"
+    done
 
     # wait for database
     echo "$(date +%F_%R) [New Install] Waiting for database to respond."
@@ -98,6 +94,17 @@ if [ ! -f "/etc/httpd/conf.d/cacti.conf" ]; then
     sed -i -e "s/Alias.*/   Alias    \/${CACTI_URL_PATH} \/cacti/" \
         -e "s/RedirectMatch.*/   RedirectMatch    \^\/\$ \/${CACTI_URL_PATH}/" \
         /etc/httpd/conf.d/cacti.conf
+fi
+
+# generate spine.conf from template on every boot
+# convert %VAR% placeholders to ${VAR} for envsubst (keeps template compatible with start.sh/upgrade.sh)
+if [ -f /template_configs/spine.conf ]; then
+    mkdir -p /spine/etc
+    sed 's/%\([A-Z_]*\)%/${\1}/g' /template_configs/spine.conf | \
+        envsubst '${DB_HOST} ${DB_PORT} ${DB_NAME} ${DB_USER} ${DB_PASS} ${RDB_HOST} ${RDB_PORT} ${RDB_NAME} ${RDB_USER} ${RDB_PASS}' \
+        > /spine/etc/spine.conf
+    chown root:apache /spine/etc/spine.conf
+    chmod 640 /spine/etc/spine.conf
 fi
 
 # file permissions

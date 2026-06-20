@@ -65,9 +65,9 @@ RUN dnf update -y && \
     php php-xml php-session php-sockets php-ldap php-gd \
     php-mysqlnd php-gmp php-mbstring php-posix \
     php-snmp php-intl php-common php-cli php-pdo php-fpm \
-    rrdtool net-snmp net-snmp-utils cronie mariadb \
+    rrdtool net-snmp net-snmp-utils cronie mariadb mysql-libs \
     openssl openldap mod_ssl net-snmp-libs \
-    postfix wget procps-ng && \
+    postfix wget procps-ng gettext && \
     ## --- Remove unnecessary files to reduce size ---
     rm -rf /usr/share/doc /usr/share/man /usr/share/info \
            /usr/share/gnupg2 /var/cache/dnf/* && \
