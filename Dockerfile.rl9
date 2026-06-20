@@ -60,7 +60,7 @@ RUN dnf update -y && \
     dnf install -y \
     php php-xml php-session php-sockets php-ldap php-gd \
     php-mysqlnd php-gmp php-mbstring php-posix \
-    php-snmp php-intl php-common php-cli php-pdo \
+    php-snmp php-intl php-common php-cli php-pdo php-fpm \
     rrdtool net-snmp net-snmp-utils cronie mariadb \
     openssl openldap mod_ssl net-snmp-libs \
     postfix wget procps-ng && \
