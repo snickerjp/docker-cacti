@@ -1,6 +1,6 @@
 FROM rockylinux:8
 
-MAINTAINER Sean Cline <smcline06@gmail.com>
+LABEL maintainer="Sean Cline <smcline06@gmail.com>"
 
 EXPOSE 80 443
 

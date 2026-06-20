@@ -1,0 +1,124 @@
+#!/bin/bash
+
+# set server timezone
+echo "$(date +%F_%R) [Note] Setting server timezone settings to '${TZ}'"
+echo "date.timezone = ${TZ}" >> /etc/php.ini
+
+# set custom php.ini settings
+sed -i "s/^\(memory_limit =\).*/\1 ${PHP_MEMORY_LIMIT}/" /etc/php.ini
+sed -i "s/^\(max_execution_time =\).*/\1 ${PHP_MAX_EXECUTION_TIME}/" /etc/php.ini
+
+rm -f /etc/localtime
+ln -s /usr/share/zoneinfo/${TZ} /etc/localtime
+
+# first boot setup (lock file prevents re-run)
+if [ ! -f /cacti/install.lock ]; then
+    echo "$(date +%F_%R) [New Install] Lock file does not exist - new install."
+
+    # apply cacti URL path to apache config
+    echo "$(date +%F_%R) [New Install] Applying cacti URL enviromental variable to /etc/httpd/conf.d/cacti.conf"
+    sed -i -e "s/Alias.*/   Alias    \/${CACTI_URL_PATH} \/cacti/" \
+           -e "s/RedirectMatch.*/   RedirectMatch    \^\/\$ \/${CACTI_URL_PATH}/" \
+        /etc/httpd/conf.d/cacti.conf
+
+    # apply database credentials to config files
+    echo "$(date +%F_%R) [New Install] Applying enviromental variables to configurations."
+    sed -i -e "s/%DB_HOST%/${DB_HOST}/" \
+           -e "s/%DB_PORT%/${DB_PORT}/" \
+           -e "s/%DB_NAME%/${DB_NAME}/" \
+           -e "s/%DB_USER%/${DB_USER}/" \
+           -e "s/%DB_PASS%/${DB_PASS}/" \
+           -e "s/%RDB_HOST%/${RDB_HOST}/" \
+           -e "s/%RDB_PORT%/${RDB_PORT}/" \
+           -e "s/%RDB_NAME%/${RDB_NAME}/" \
+           -e "s/%RDB_USER%/${RDB_USER}/" \
+           -e "s/%RDB_PASS%/${RDB_PASS}/" \
+           -e "s/%CACTI_URL_PATH%/${CACTI_URL_PATH}/" \
+        /cacti/include/config.php \
+        /settings/*.sql \
+        /spine/etc/spine.conf
+
+    # wait for database
+    echo "$(date +%F_%R) [New Install] Waiting for database to respond."
+    while ! timeout 1 bash -c 'cat < /dev/null > /dev/tcp/${DB_HOST}/${DB_PORT}'; do sleep 3; done
+    echo "$(date +%F_%R) [New Install] Database is up! - configuring DB located at ${DB_HOST}:${DB_PORT}."
+
+    # initialize database if requested
+    if [ ${INITIALIZE_DB} = 1 ]; then
+        echo "$(date +%F_%R) [New Install] Container has been instructed to create new Database on remote system."
+        mysql -h ${DB_HOST} --port=${DB_PORT} -uroot -p${DB_ROOT_PASS} -e "CREATE DATABASE IF NOT EXISTS ${DB_NAME} /*\!40100 DEFAULT CHARACTER SET utf8 */;"
+        mysql -h ${DB_HOST} --port=${DB_PORT} -uroot -p${DB_ROOT_PASS} -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}';"
+        mysql -h ${DB_HOST} --port=${DB_PORT} -uroot -p${DB_ROOT_PASS} -e "GRANT ALL ON ${DB_NAME}.* TO '${DB_USER}'@'%';"
+        mysql -h ${DB_HOST} --port=${DB_PORT} -uroot -p${DB_ROOT_PASS} -e "GRANT SELECT ON mysql.time_zone_name TO '${DB_USER}'@'%';"
+        mysql -h ${DB_HOST} --port=${DB_PORT} -uroot -p${DB_ROOT_PASS} -e "GRANT SESSION_VARIABLES_ADMIN, SYSTEM_VARIABLES_ADMIN ON *.* TO '${DB_USER}'@'%';" 2>/dev/null
+        mysql -h ${DB_HOST} --port=${DB_PORT} -uroot -p${DB_ROOT_PASS} -e "FLUSH PRIVILEGES;"
+    fi
+
+    # import cacti schema
+    echo "$(date +%F_%R) [New Install] Merging vanilla cacti.sql file to database."
+    sed -i "s/,NO_AUTO_CREATE_USER//g; s/NO_AUTO_CREATE_USER,\?//g" /cacti/cacti.sql
+    if [ -n "${DB_ROOT_PASS}" ]; then
+        mysql -h ${DB_HOST} --port=${DB_PORT} -uroot -p${DB_ROOT_PASS} ${DB_NAME} < /cacti/cacti.sql
+    else
+        mysql -h ${DB_HOST} --port=${DB_PORT} -u${DB_USER} -p${DB_PASS} ${DB_NAME} < /cacti/cacti.sql
+    fi
+
+    # import templates (skip for remote pollers)
+    if [ ${REMOTE_POLLER} != 1 ]; then
+        echo "$(date +%F_%R) [New Install] Installing templates."
+        for filename in /templates/*.xml; do
+            php -q /cacti/cli/import_template.php --filename=$filename > /dev/null
+        done
+    fi
+
+    # import additional settings
+    for filename in /settings/*.sql; do
+        echo "$(date +%F_%R) [New Install] Importing settings file $filename"
+        if [ -n "${DB_ROOT_PASS}" ]; then
+            mysql -h ${DB_HOST} --port=${DB_PORT} -uroot -p${DB_ROOT_PASS} ${DB_NAME} < $filename
+        else
+            mysql -h ${DB_HOST} --port=${DB_PORT} -u${DB_USER} -p${DB_PASS} ${DB_NAME} < $filename
+        fi
+    done
+
+    touch /cacti/install.lock
+    echo "$(date +%F_%R) [New Install] Creating lock file, db setup complete."
+fi
+
+# ensure apache config exists (volume mount scenario)
+if [ ! -f "/etc/httpd/conf.d/cacti.conf" ]; then
+    cp /template_configs/cacti.conf /etc/httpd/conf.d/
+    sed -i -e "s/Alias.*/   Alias    \/${CACTI_URL_PATH} \/cacti/" \
+           -e "s/RedirectMatch.*/   RedirectMatch    \^\/\$ \/${CACTI_URL_PATH}/" \
+        /etc/httpd/conf.d/cacti.conf
+fi
+
+# file permissions
+chown -R apache.apache /cacti/resource/ /cacti/cache/ /cacti/log/ /cacti/scripts/ /cacti/rra/
+
+# remote poller config
+if [ ${REMOTE_POLLER} = 1 ]; then
+    echo "$(date +%F_%R) [Remote Poller] Configuring as remote poller."
+    sed -i -e "s/#\$rdatabase/\$rdatabase/" /cacti/include/config.php
+    chown -R apache.apache /cacti
+fi
+
+# backup cron
+if [ ${BACKUP_TIME} -gt 0 ]; then
+    sed -i -e "s/%DB_HOST%/${DB_HOST}/" /var/spool/cron/apache
+fi
+
+# start services
+echo "$(date +%F_%R) [Note] Starting crond service."
+/usr/sbin/crond -npP &
+
+echo "$(date +%F_%R) [Note] Starting snmpd service."
+snmpd -Lf /var/log/snmpd.log &
+
+echo "$(date +%F_%R) [Note] Starting php-fpm service."
+rm -rf /run/php-fpm/*
+php-fpm
+
+echo "$(date +%F_%R) [Note] Starting httpd service."
+rm -rf /run/httpd/httpd.pid
+httpd -DFOREGROUND
