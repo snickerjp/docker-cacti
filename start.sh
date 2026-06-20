@@ -102,7 +102,7 @@ if [ ! -f /cacti/install.lock ]; then
     # Remove NO_AUTO_CREATE_USER from sql_mode (removed in MySQL 8.0.11+)
     sed -i "s/,NO_AUTO_CREATE_USER//g; s/NO_AUTO_CREATE_USER,\?//g" /cacti/cacti.sql
     if [ -n "${DB_ROOT_PASS}" ]; then
-        mysql -h "${DB_HOST}" --port="${DB_PORT}" -uroot -p"${DB_ROOT_PASS}" ${DB_NAME} < /cacti/cacti.sql
+        mysql -h "${DB_HOST}" --port="${DB_PORT}" -uroot -p"${DB_ROOT_PASS}" "${DB_NAME}" < /cacti/cacti.sql
     else
         mysql -h "${DB_HOST}" --port="${DB_PORT}" -u"${DB_USER}" -p"${DB_PASS}" "${DB_NAME}" < /cacti/cacti.sql
     fi
@@ -127,7 +127,7 @@ if [ ! -f /cacti/install.lock ]; then
     for filename in /settings/*.sql; do
         echo "$(date +%F_%R) [New Install] Importing settings file $filename"
         if [ -n "${DB_ROOT_PASS}" ]; then
-            mysql -h "${DB_HOST}" --port="${DB_PORT}" -uroot -p"${DB_ROOT_PASS}" ${DB_NAME} < "$filename"
+            mysql -h "${DB_HOST}" --port="${DB_PORT}" -uroot -p"${DB_ROOT_PASS}" "${DB_NAME}" < "$filename"
         else
             mysql -h "${DB_HOST}" --port="${DB_PORT}" -u"${DB_USER}" -p"${DB_PASS}" "${DB_NAME}" < "$filename"
         fi
