@@ -2,7 +2,8 @@
 
 # set server timezone
 echo "$(date +%F_%R) [Note] Setting server timezone settings to '${TZ}'"
-echo "date.timezone = ${TZ}" >> /etc/php.ini
+sed -i "s/^\(date.timezone =\).*/\1 ${TZ}/" /etc/php.ini
+grep -q "^date.timezone" /etc/php.ini || echo "date.timezone = ${TZ}" >> /etc/php.ini
 
 # set custom php.ini settings
 sed -i "s/^\(memory_limit =\).*/\1 ${PHP_MEMORY_LIMIT}/" /etc/php.ini
@@ -45,6 +46,10 @@ if [ ! -f /cacti/install.lock ]; then
 
     # initialize database if requested
     if [ ${INITIALIZE_DB} = 1 ]; then
+        if [ -z "${DB_ROOT_PASS}" ]; then
+            echo "$(date +%F_%R) [Error] INITIALIZE_DB=1 requires DB_ROOT_PASS to be set."
+            exit 1
+        fi
         echo "$(date +%F_%R) [New Install] Container has been instructed to create new Database on remote system."
         mysql -h ${DB_HOST} --port=${DB_PORT} -uroot -p${DB_ROOT_PASS} -e "CREATE DATABASE IF NOT EXISTS ${DB_NAME} /*\!40100 DEFAULT CHARACTER SET utf8 */;"
         mysql -h ${DB_HOST} --port=${DB_PORT} -uroot -p${DB_ROOT_PASS} -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'%' IDENTIFIED BY '${DB_PASS}';"
@@ -94,13 +99,13 @@ if [ ! -f "/etc/httpd/conf.d/cacti.conf" ]; then
 fi
 
 # file permissions
-chown -R apache.apache /cacti/resource/ /cacti/cache/ /cacti/log/ /cacti/scripts/ /cacti/rra/
+chown -R apache:apache /cacti/resource/ /cacti/cache/ /cacti/log/ /cacti/scripts/ /cacti/rra/
 
 # remote poller config
 if [ ${REMOTE_POLLER} = 1 ]; then
     echo "$(date +%F_%R) [Remote Poller] Configuring as remote poller."
     sed -i -e "s/#\$rdatabase/\$rdatabase/" /cacti/include/config.php
-    chown -R apache.apache /cacti
+    chown -R apache:apache /cacti
 fi
 
 # backup cron
