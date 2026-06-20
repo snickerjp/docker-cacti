@@ -2,8 +2,8 @@
 
 # set server timezone
 echo "$(date +%F_%R) [Note] Setting server timezone settings to '${TZ}'"
-sed -i "s/^\(date.timezone =\).*/\1 ${TZ}/" /etc/php.ini
-grep -q "^date.timezone" /etc/php.ini || echo "date.timezone = ${TZ}" >> /etc/php.ini
+sed -i "s/^\(date\.timezone =\).*/\1 ${TZ}/" /etc/php.ini
+grep -q "^date\.timezone" /etc/php.ini || echo "date.timezone = ${TZ}" >> /etc/php.ini
 
 # set custom php.ini settings
 sed -i "s/^\(memory_limit =\).*/\1 ${PHP_MEMORY_LIMIT}/" /etc/php.ini
@@ -17,13 +17,13 @@ if [ ! -f /cacti/install.lock ]; then
     echo "$(date +%F_%R) [New Install] Lock file does not exist - new install."
 
     # apply cacti URL path to apache config
-    echo "$(date +%F_%R) [New Install] Applying cacti URL enviromental variable to /etc/httpd/conf.d/cacti.conf"
+    echo "$(date +%F_%R) [New Install] Applying cacti URL environmental variable to /etc/httpd/conf.d/cacti.conf"
     sed -i -e "s/Alias.*/   Alias    \/${CACTI_URL_PATH} \/cacti/" \
            -e "s/RedirectMatch.*/   RedirectMatch    \^\/\$ \/${CACTI_URL_PATH}/" \
         /etc/httpd/conf.d/cacti.conf
 
     # apply database credentials to config files
-    echo "$(date +%F_%R) [New Install] Applying enviromental variables to configurations."
+    echo "$(date +%F_%R) [New Install] Applying environmental variables to configurations."
     sed -i -e "s/%DB_HOST%/${DB_HOST}/" \
            -e "s/%DB_PORT%/${DB_PORT}/" \
            -e "s/%DB_NAME%/${DB_NAME}/" \
@@ -72,7 +72,7 @@ if [ ! -f /cacti/install.lock ]; then
     if [ ${REMOTE_POLLER} != 1 ]; then
         echo "$(date +%F_%R) [New Install] Installing templates."
         for filename in /templates/*.xml; do
-            php -q /cacti/cli/import_template.php --filename=$filename > /dev/null
+            php -q /cacti/cli/import_template.php --filename="$filename" > /dev/null
         done
     fi
 
