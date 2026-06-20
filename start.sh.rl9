@@ -61,12 +61,14 @@ if [ ! -f /cacti/install.lock ]; then
 
     # import cacti schema
     echo "$(date +%F_%R) [New Install] Merging vanilla cacti.sql file to database."
-    sed -i "s/,NO_AUTO_CREATE_USER//g; s/NO_AUTO_CREATE_USER,\?//g" /cacti/cacti.sql
+    cp /cacti/cacti.sql /tmp/cacti_import.sql
+    sed -i "s/,NO_AUTO_CREATE_USER//g; s/NO_AUTO_CREATE_USER,\?//g" /tmp/cacti_import.sql
     if [ -n "${DB_ROOT_PASS}" ]; then
-        mysql -h "${DB_HOST}" --port="${DB_PORT}" -uroot -p"${DB_ROOT_PASS}" "${DB_NAME}" </cacti/cacti.sql
+        mysql -h "${DB_HOST}" --port="${DB_PORT}" -uroot -p"${DB_ROOT_PASS}" "${DB_NAME}" </tmp/cacti_import.sql
     else
-        mysql -h "${DB_HOST}" --port="${DB_PORT}" -u"${DB_USER}" -p"${DB_PASS}" "${DB_NAME}" </cacti/cacti.sql
+        mysql -h "${DB_HOST}" --port="${DB_PORT}" -u"${DB_USER}" -p"${DB_PASS}" "${DB_NAME}" </tmp/cacti_import.sql
     fi
+    rm -f /tmp/cacti_import.sql
 
     # import templates (skip for remote pollers)
     if [ "${REMOTE_POLLER}" != 1 ]; then

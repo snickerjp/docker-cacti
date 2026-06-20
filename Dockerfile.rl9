@@ -1,9 +1,12 @@
 ARG CACTI_VERSION=1.2.31
+ARG CACTI_SHA256=""
+ARG SPINE_SHA256=""
 
 ## --- Build stage: compile Spine ---
 FROM rockylinux:9 AS builder
 
 ARG CACTI_VERSION
+ARG SPINE_SHA256
 
 RUN dnf install -y epel-release dnf-plugins-core && \
     dnf config-manager --set-enabled crb && \
@@ -12,6 +15,7 @@ RUN dnf install -y epel-release dnf-plugins-core && \
     net-snmp-devel openssl-devel mysql-devel wget && \
     wget -q -O /tmp/cacti-spine.tar.gz \
         "https://www.cacti.net/downloads/spine/cacti-spine-${CACTI_VERSION}.tar.gz" && \
+    if [ -n "${SPINE_SHA256}" ]; then echo "${SPINE_SHA256}  /tmp/cacti-spine.tar.gz" | sha256sum -c -; fi && \
     tar -xf /tmp/cacti-spine.tar.gz -C /tmp && \
     cd /tmp/cacti-spine-*/ && \
     ./bootstrap && \
@@ -73,8 +77,10 @@ RUN dnf update -y && \
     /usr/libexec/httpd-ssl-gencerts
 
 ## --- Download and install Cacti ---
+ARG CACTI_SHA256
 RUN wget -q -O /tmp/cacti.tar.gz \
         "https://www.cacti.net/downloads/cacti-${CACTI_VERSION}.tar.gz" && \
+    if [ -n "${CACTI_SHA256}" ]; then echo "${CACTI_SHA256}  /tmp/cacti.tar.gz" | sha256sum -c -; fi && \
     mkdir -p /cacti && \
     tar -xf /tmp/cacti.tar.gz -C /tmp && \
     mv /tmp/cacti-*/* /cacti/ && \
