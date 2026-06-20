@@ -1,0 +1,127 @@
+ARG CACTI_VERSION=1.2.31
+
+## --- Build stage: compile Spine ---
+FROM rockylinux:9 AS builder
+
+ARG CACTI_VERSION
+
+RUN dnf install -y epel-release dnf-plugins-core && \
+    dnf config-manager --set-enabled crb && \
+    dnf install -y \
+    autoconf automake gcc gzip libtool make m4 bison dos2unix help2man \
+    net-snmp-devel openssl-devel mysql-devel wget && \
+    wget -q -O /tmp/cacti-spine.tar.gz \
+        "https://www.cacti.net/downloads/spine/cacti-spine-${CACTI_VERSION}.tar.gz" && \
+    tar -xf /tmp/cacti-spine.tar.gz -C /tmp && \
+    cd /tmp/cacti-spine-*/ && \
+    ./bootstrap && \
+    ./configure --prefix=/spine && \
+    make && make install
+
+
+## --- Runtime stage ---
+FROM rockylinux:9
+
+ARG CACTI_VERSION
+
+LABEL maintainer="Sean Cline <smcline06@gmail.com>"
+LABEL cacti.version="${CACTI_VERSION}"
+
+EXPOSE 80 443
+
+ENV \
+    DB_NAME=cacti \
+    DB_USER=cactiuser \
+    DB_PASS=cactipassword \
+    DB_HOST=localhost \
+    DB_PORT=3306 \
+    RDB_NAME=cacti \
+    RDB_USER=cactiuser \
+    RDB_PASS=cactipassword \
+    RDB_HOST=localhost \
+    RDB_PORT=3306 \
+    CACTI_URL_PATH=cacti \
+    BACKUP_RETENTION=7 \
+    BACKUP_TIME=0 \
+    REMOTE_POLLER=0 \
+    INITIALIZE_DB=0 \
+    TZ=UTC \
+    PHP_MEMORY_LIMIT=800M \
+    PHP_MAX_EXECUTION_TIME=60 \
+    PHP_SNMP=1
+
+CMD ["/start.sh"]
+
+## --- Install runtime dependencies ---
+RUN dnf update -y && \
+    dnf install -y epel-release && \
+    dnf install -y dnf-plugins-core && \
+    dnf config-manager --set-enabled crb && \
+    dnf install -y \
+    php php-xml php-session php-sockets php-ldap php-gd \
+    php-mysqlnd php-gmp php-mbstring php-posix \
+    php-snmp php-intl php-common php-cli php-pdo \
+    rrdtool net-snmp net-snmp-utils cronie mariadb \
+    openssl openldap mod_ssl net-snmp-libs \
+    postfix wget procps-ng && \
+    ## --- Remove unnecessary files to reduce size ---
+    rm -rf /usr/share/doc /usr/share/man /usr/share/info \
+           /usr/share/gnupg2 /var/cache/dnf/* && \
+    dnf clean all && \
+    rm -rf /var/cache/dnf/* && \
+    echo "ServerName localhost" > /etc/httpd/conf.d/fqdn.conf && \
+    /usr/libexec/httpd-ssl-gencerts
+
+## --- Download and install Cacti ---
+RUN wget -q -O /tmp/cacti.tar.gz \
+        "https://www.cacti.net/downloads/cacti-${CACTI_VERSION}.tar.gz" && \
+    mkdir -p /cacti && \
+    tar -xf /tmp/cacti.tar.gz -C /tmp && \
+    mv /tmp/cacti-*/* /cacti/ && \
+    ## --- Clean unnecessary cacti files ---
+    rm -rf /cacti/docs /cacti/CHANGELOG /cacti/LICENSE \
+           /cacti/locales/po && \
+    rm -rf /tmp/*
+
+## --- Copy compiled Spine from builder ---
+COPY --from=builder /spine /spine
+RUN chown root:root /spine/bin/spine && chmod +s /spine/bin/spine
+
+## --- SERVICE CONFIGS ---
+COPY configs /template_configs
+COPY configs/crontab /etc/crontab
+
+## --- Install configs to their destinations ---
+RUN cp /template_configs/spine.conf /spine/etc && \
+    cp /template_configs/cacti.conf /etc/httpd/conf.d && \
+    cp /template_configs/config.php /cacti/include
+
+## --- SETTINGS/EXTRAS ---
+COPY plugins /cacti_plugins
+COPY templates /templates
+COPY settings /settings
+
+RUN cp -r /templates/resource/* /cacti/resource && \
+    cp -r /templates/scripts/* /cacti/scripts && \
+    cp -r /cacti_plugins/* /cacti/plugins
+
+## --- Fix php-fpm config ---
+RUN mkdir -p /run/php-fpm && \
+    sed -i -e "s/;listen.owner = nobody/listen.owner = apache/g" \
+           -e "s/;listen.group = nobody/listen.group = apache/g" \
+           -e "s/listen.acl_users = apache,nginx/;listen.acl_users = apache,nginx/g" \
+        /etc/php-fpm.d/www.conf
+
+## --- Generate self-signed cert at build time (overridable via volume mount) ---
+RUN openssl req -new -newkey rsa:2048 -days 3650 -nodes -x509 \
+        -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=cacti.local" \
+        -keyout /etc/ssl/certs/cacti.key -out /etc/ssl/certs/cacti.crt
+
+## --- Scripts ---
+COPY start.sh.rl9 /start.sh
+COPY upgrade.sh /upgrade.sh
+COPY restore.sh /restore.sh
+COPY backup.sh /backup.sh
+
+RUN chmod +x /start.sh /upgrade.sh /restore.sh /backup.sh && \
+    mkdir -p /backups
